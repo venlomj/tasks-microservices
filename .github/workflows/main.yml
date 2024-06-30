@@ -1,0 +1,138 @@
+name: Build and deliver containers
+
+on: push
+
+jobs:
+  taskservice:
+    runs-on: ubuntu-latest
+    name: Java 17 build, test, deliver task-service container
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          cache: maven
+          distribution: adopt
+
+      - name: Build and package project
+        working-directory: ./task-service
+        run: mvn package -B
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build
+        run: docker build -t ${{ secrets.DOCKER_USER }}/task-service:latest ./task-service
+
+      - name: Upload container to Docker Hub with Push
+        run: docker push ${{ secrets.DOCKER_USER }}/task-service:latest
+  emailservice:
+    runs-on: ubuntu-latest
+    name: Java 17 build, test, deliver email-service container
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          cache: maven
+          distribution: adopt
+
+      - name: Build and package project
+        working-directory: ./email-service
+        run: mvn package -B
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build
+        run: docker build -t ${{ secrets.DOCKER_USER }}/email-service:latest ./email-service
+
+      - name: Upload container to Docker Hub with Push
+        run: docker push ${{ secrets.DOCKER_USER }}/email-service:latest
+  teamservice:
+    runs-on: ubuntu-latest
+    name: Java 17 build, test, deliver team-service container
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          cache: maven
+          distribution: adopt
+
+      - name: Build, test and package project
+        working-directory: ./team-service
+        run: mvn package -B
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build
+        run: docker build -t ${{ secrets.DOCKER_USER }}/task-team-service:latest ./team-service
+
+      - name: Upload container to Docker Hub with Push
+        run: docker push ${{ secrets.DOCKER_USER }}/task-team-service:latest
+  assignmentservice:
+    runs-on: ubuntu-latest
+    name: Java 17 build, test, deliver assignment-service container
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          cache: maven
+          distribution: adopt
+
+      - name: Build, test and package project
+        working-directory: ./assignment-service
+        run: mvn package -B
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build
+        run: docker build -t ${{ secrets.DOCKER_USER }}/assignment-service:latest ./assignment-service
+
+      - name: Upload container to Docker Hub with Push
+        run: docker push ${{ secrets.DOCKER_USER }}/assignment-service:latest
+  apigateway:
+    runs-on: ubuntu-latest
+    name: Java 17 build, test, deliver api-gateway container
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          cache: maven
+          distribution: adopt
+
+      - name: Build and package project
+        working-directory: ./api-gateway
+        run: mvn package -B -DskipTests
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build
+        run: docker build --build-arg GOOGLE_CLIENTID=${{ secrets.GOOGLE_CLIENTID }} --build-arg GOOGLE_CLIENTSECRET=${{ secrets.GOOGLE_CLIENTSECRET }} -t ${{ secrets.DOCKER_USER }}/ede-api-gateway:latest ./api-gateway
+
+      - name: Docker Build
+        run: docker build -t ${{ secrets.DOCKER_USER }}/app.jar:latest ./api-gateway
+
+      - name: Upload container to Docker Hub with Push
+        run: docker push ${{ secrets.DOCKER_USER }}/app.jar:latest

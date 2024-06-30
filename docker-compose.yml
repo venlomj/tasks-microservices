@@ -1,0 +1,111 @@
+services:
+  mongo-tasks:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_task_data:/data/db
+  mysql-mail:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_mail_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: abc123
+
+  mysql-team:
+    image: mysql:latest
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_team_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: abc123
+
+  mongo-assignment:
+    image: mongo:latest
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_assignment_data:/data/db
+
+  assignment-service:
+    depends_on:
+      - mongo-assignment
+      - task-service
+      - email-service
+      - team-service
+    image: venlomj/assignment-service
+    ports:
+      - "8084:8084"
+    environment:
+      MONGODB_PORT: 27017
+      MONGODB_HOST: mongo-assignment
+      TEAM_SERVICE_BASEURL: team-service:8081
+      TASK_SERVICE_BASEURL: task-service:8080
+      EMAIL_SERVICE_BASEURL: email-service:8082
+
+  email-service:
+    depends_on:
+      - mysql-mail
+    image: venlomj/email-service
+    ports:
+      - "8082:8082"
+    environment:
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: abc123
+      MYSQL_DB_HOST: mysql-mail
+      MYSQL_DB_PORT: 3306
+
+  team-service:
+    depends_on:
+      - mysql-team
+      - email-service
+      - task-service
+    image: venlomj/task-team-service
+    ports:
+      - "8081:8081"
+    environment:
+      EMAIL_SERVICE_BASEURL: email-service:8082
+      TASK_SERVICE_BASEURL: task-service:8080
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: abc123
+      MYSQL_DB_HOST: mysql-team
+      MYSQL_DB_PORT: 3306
+
+  task-service:
+    depends_on:
+      - mongo-tasks
+      - email-service
+    image: venlomj/task-service
+    ports:
+      - "8080:8080"
+    environment:
+      EMAIL_SERVICE_BASEURL: email-service:8082
+      MONGODB_PORT: 27017
+      MONGODB_HOST: mongo-tasks
+
+  api-gateway:
+    depends_on:
+      - team-service
+      - task-service
+      - assignment-service
+    image: venlomj/api-gateway
+    ports:
+      - "8083:8083"
+    links:
+      - team-service
+      - task-service
+      - assignment-service
+    restart: on-failure
+    environment:
+      TEAM_SERVICE_BASEURL: team-service:8081
+      TASK_SERVICE_BASEURL: task-service:8080
+      ASSIGNMENT_SERVICE_BASEURL: assignment-service:8084
+
+volumes:
+  mongo_task_data:
+  mysql_team_data:
+  mysql_mail_data:
+  mongo_assignment_data:
